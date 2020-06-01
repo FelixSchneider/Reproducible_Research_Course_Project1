@@ -69,7 +69,7 @@ Plot the resulting data.
 barplot(steps~date, steps_per_day, main="Total number of steps taken each day")
 ```
 
-![](PA1_template_files/figure-html/barplot_steps_per_day-1.png)<!-- -->
+![](figure/barplot_steps_per_day-1.png)<!-- -->
 
 Calculate the mean and median of the total number of steps for all days.
 
@@ -108,7 +108,7 @@ Plot the resulting data.
 plot(steps~interval, steps_by_interval, type="l", main="Daily average number of steps in each 5-minute interval")
 ```
 
-![](PA1_template_files/figure-html/lineplot_steps_by_interval-1.png)<!-- -->
+![](figure/lineplot_steps_by_interval-1.png)<!-- -->
 
 Calculate the 5-minute interval that, on average over all days, contains the maximum number of steps.
 
@@ -155,7 +155,7 @@ The corresponding plot is as follows:
 barplot(steps~date, steps_per_day_noNAs, main="Total number of steps taken each day")
 ```
 
-![](PA1_template_files/figure-html/barplot_noNAs-1.png)<!-- -->
+![](figure/barplot_noNAs-1.png)<!-- -->
 
 Calculate the mean and median of the total number of steps for all days.
 
@@ -227,5 +227,5 @@ The time series of the daily-averaged 5-minute interval steps of weekdays and we
 xyplot(steps ~ interval | daytype, steps_by_interval_noNAs, type="l", layout=c(1,2))
 ```
 
-![](PA1_template_files/figure-html/lattice_daytype-1.png)<!-- -->
+![](figure/lattice_daytype-1.png)<!-- -->
 
