@@ -5,21 +5,141 @@ output:
     keep_md: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+First, load the required libraries that are needed later.
+```{r load_packages, message=FALSE, warning=FALSE, results='hide'}
+chooseCRANmirror(graphics=FALSE, ind=1)
+if (!("dplyr" %in% library())) install.packages("dplyr",type="binary",quiet=TRUE)
+library(dplyr)
+if (!("lattice" %in% library())) install.packages("lattice",quiet=TRUE)
+library(lattice)
+```
 
 ## Loading and preprocessing the data
+Load the data:
+```{r loading_data}
+con <- unz(description="activity.zip",filename="activity.csv")
+activity <- read.csv(con)
+```
 
+Explore the data:
+```{r str}
+str(activity)
+```
 
+```{r summary}
+summary(activity)
+```
+Further preprocessing of the data is not necessary.
 
 ## What is mean total number of steps taken per day?
+Calculate the total number of steps taken each day. `NA`'s are removed.
+```{r create_steps_per_day_data}
+steps_per_day <- activity %>%
+    group_by(date) %>%
+    summarise(steps=sum(steps,na.rm=TRUE))
+```
 
+Plot the resulting data.
+```{r barplot_steps_per_day}
+barplot(steps~date, steps_per_day, main="Total number of steps taken each day")
+```
 
+Calculate the mean and median of the total number of steps for all days.
+```{r calc_mean_median_of_tot_steps_per_day}
+mean_total_daily_steps <- mean(steps_per_day$steps)
+mean_total_daily_steps
+median_total_daily_steps <- median(steps_per_day$steps)
+median_total_daily_steps
+```
+The **mean** of the total daily steps is `r format(mean_total_daily_steps,nsmall=0)` and the **median** of the total daily steps is
+`r median_total_daily_steps`.
 
 ## What is the average daily activity pattern?
+Calculate the number of steps in each 5-minute interval averaged over all days in the dataset. `Na`'s are removed.
+```{r create_daily_mean_interval_data}
+steps_by_interval <- activity %>%
+    group_by(interval) %>%
+    summarise(steps=mean(steps,na.rm=TRUE))
+```
 
+Plot the resulting data.
+```{r lineplot_steps_by_interval}
+plot(steps~interval, steps_by_interval, type="l", main="Daily average number of steps in each 5-minute interval")
+```
 
+Calculate the 5-minute interval that, on average over all days, contains the maximum number of steps.
+```{r calc_int_of_max_average_steps}
+max_int <- which.max(steps_by_interval$steps)
+max_interval <- steps_by_interval[max_int,]$interval
+max_interval
+```
+The 5-minute interval that on average over all days contains the maximum number of steps is `r max_interval`.
 
 ## Imputing missing values
+Calculation of the total number of missing values in the dataset.
+```{r calc_NAs}
+total_NA <- colSums(is.na(activity))
+```
+There are `r total_NA[1]` rows with `NA`'s in the `activity` dataset.
 
+I decided to replace missing values by the mean steps of the corresponding interval.
+```{r replace_NAs}
+activity_noNAs <- activity
+for (i in 1:nrow(activity_noNAs)) {
+    if (is.na(activity_noNAs[i,"steps"])) {
+        impute_steps <- steps_by_interval[steps_by_interval$interval==activity_noNAs[i,"interval"],"steps"]
+        activity_noNAs[i,"steps"] <- as.integer(impute_steps)
+    }
+}
+```
+Calculate the total steps per day on the dataset with imputed NAs.
+```{r create_steps_per_day_noNAs}
+steps_per_day_noNAs <- activity_noNAs %>%
+    group_by(date) %>%
+    summarise(steps=sum(steps))
+```
+The corresponding plot is as follows:
+```{r barplot_noNAs}
+barplot(steps~date, steps_per_day_noNAs, main="Total number of steps taken each day")
+```
 
+Calculate the mean and median of the total number of steps for all days.
+```{r calc_mean_median_with_noNAs}
+mean_total_daily_steps_noNAs <- mean(steps_per_day_noNAs$steps)
+mean_total_daily_steps_noNAs
+median_total_daily_steps_noNAs <- median(steps_per_day_noNAs$steps)
+median_total_daily_steps_noNAs
+```
+The **mean** of the total daily steps is `r format(mean_total_daily_steps_noNAs,nsmall=0)` and the **median** of the total daily steps is
+`r median_total_daily_steps_noNAs`. These values differ from the case with NAs ignored.
+
+```{r comparison_table}
+t <- data.frame(mean  =c(  mean_total_daily_steps,  mean_total_daily_steps_noNAs),
+                median=c(median_total_daily_steps,median_total_daily_steps_noNAs)
+                ,row.names=c("NAs ignored","NAs imputed")
+                )
+t
+```
+Apparently the mean and median with NAs imputed are bigger than those with NAs ignored.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+Create a new factor variable `daytype` in the dataset `activity_noNAs` with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r create_daytype_variable}
+Sys.setlocale("LC_ALL","English_US")
+activity_noNAs$daytype <- factor(ifelse(weekdays(as.Date(activity_noNAs$date)) %in% c("Saturday","Sunday"), "weekend", "weekday") )
+str(activity_noNAs$daytype)
+```
+Calculate the number of steps in each 5-minute interval averaged over weekday and weekend.
+```{r create_daily_mean_interval_data_noNAs}
+steps_by_interval_noNAs <- activity_noNAs %>%
+    group_by(interval,daytype) %>%
+    summarise(steps=mean(steps))
+```
+The time series of the daily-averaged 5-minute interval steps of weekdays and weekends is shown below:
+```{r lattice_daytype}
+xyplot(steps ~ interval | daytype, steps_by_interval_noNAs, type="l", layout=c(1,2))
+```
+
